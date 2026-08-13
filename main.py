@@ -117,14 +117,6 @@ def main():
     print("\n=== 필터 데이터 확인 ===")
     print(filters)
 
-    size_5 = filters["size_5"]
-
-    print("\n=== size_5 필터 확인 ===")
-    print(size_5)
-
-    cross_filter = size_5["cross"]
-    x_filter = size_5["x"]
-
     print("\n=== Cross 필터 ===")
     print(cross_filter)
 
@@ -136,36 +128,47 @@ def main():
     print("\n=== 패턴 데이터 확인 ===")
     print(patterns)
 
-    case = patterns["size_5_01"]
+    for case_name, case in patterns.items():
 
-    print("\n=== 테스트 케이스 ===")
-    print(case)
+        print("\n==============================")
+        print(f"CASE : {case_name}")
+        print("==============================")
 
-    pattern = case["input"]
-    expected = case["expected"]
+        pattern = case["input"]
+        expected = case["expected"]
 
-    print("\n=== 패턴 ===")
-    print(pattern)
+        size = int(case_name.split("_")[1])
+        filter_key = f"size_{size}"
+        size_filters = filters[filter_key]
 
-    print("\n=== Expected ===")
-    print(expected)
+        cross_filter = size_filters["cross"]
+        x_filter = size_filters["x"]
 
-    score_cross = mac_score(pattern, cross_filter)
-    score_x = mac_score(pattern, x_filter)
+        score_cross = mac_score(pattern, cross_filter)
+        score_x = mac_score(pattern, x_filter)
 
-    result = judge_score(score_cross, score_x)
-    
-    if result == "A":
-        final_result = "Cross"
-    elif result == "B":
-        final_result = "X"
-    else:
-        final_result = "UNDECIDED"
+        result = judge_score(score_cross, score_x)
 
-    print("\n=== JSON MAC 계산 결과 ===")
-    print(f"Cross 점수 : {score_cross}")
-    print(f"X 점수     : {score_x}")
-    print(f"판정 결과  : {result}")
+        if result == "A":
+            final_result = "Cross"
+        elif result == "B":
+            final_result = "X"
+        else:
+            final_result = "UNDECIDED"
+
+        print("\n=== JSON MAC 계산 결과 ===")
+        print(f"Cross 점수 : {score_cross}")
+        print(f"X 점수     : {score_x}")
+        print(f"판정 결과  : {final_result}")
+        expected_label = normalize_label(expected)
+
+        if final_result == expected_label:
+            result_status = "PASS"
+        else:
+            result_status = "FAIL"
+
+        print(f"Expected   : {expected_label}")
+        print(f"Result     : {result_status}")
 
 
 if __name__ == "__main__":
