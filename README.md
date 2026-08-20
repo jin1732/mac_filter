@@ -1,47 +1,49 @@
-## 1. 프로젝트 기본 구조 만들기
+# Mini NPU 시뮬레이터 구현
+#### 3×3부터 25×25까지 다양한 크기의 패턴과 필터에 MAC 연산을 적용하고 유사도 점수를 계산하여 Cross와 X를 판별하는 Mini NPU 시뮬레이터를 완성한다.JSON 데이터를 활용해 연산 횟수와 실행 시간을 비교하며 AI 연산의 기본 원리를 이해한다.
 
-먼저 파일 구조부터 잡아.
+___
+
+>## 1. 실행 환경
+- OS: macOS Sequoia 15.7.7
+- Shell: zsh
+- Python: 3.12.13
+- Git: 2.54.0
+- Editor : Visual Studio Code
+
+
+>## 2. Mac 연산 실핼 기록
+
+### ① 프로젝트 기본 구조 만들기
+
  ```zsh
-프로젝트/
+MAC_FILTER/
 │
-├─ main.py
-├─ data.json
-└─ README.md
+├─ main.py.   # 실제 Python 콘솔 프로그램
+├─ data.json  # 5×5, 13×13, 25×25 테스트 데이터
+└─ README.md  # 실행 방법, 결과 리포트, 실패 원인, 시간복잡도 작성
 ```
-main.py : 실제 Python 콘솔 프로그램
-data.json : 5×5, 13×13, 25×25 테스트 데이터
-README.md : 실행 방법, 결과 리포트, 실패 원인, 시간복잡도 작성
 
-처음에는 main.py 하나로 모든 기능을 구현한 뒤, 코드가 길어지면 함수별로 정리하는 방식이 편해.
+### ② MAC 연산 완성
+- mac_score() 함수 작성
+- score 변수 생성 및 초기화
+- for i, for j로 행·열 순회
+- 같은 위치의 값을 곱해 score에 누적
 
-## 2. 2차원 배열 구조 구현
-
-가장 먼저 해야 할 것은 n×n 데이터를 Python에서 저장하고 읽는 것이야.
-
-예를 들어:
 ```zsh
-pattern = [
-    [1, 0, 1],
-    [0, 1, 0],
-    [1, 0, 1]
-]
+def mac_score(pattern, filter_data):
+    score = 0.0
+
+    for i in range(len(pattern)):
+        for j in range(len(pattern[i])):
+            score += pattern[i][j] * filter_data[i][j]
+
+    return score
 ```
-여기서
-```zsh
-pattern[1][2]
-```
-
-처럼 특정 위치의 값을 읽을 수 있어야 해.
-
-이 단계에서 확인할 것:
-
-3×3 처리
-5×5 처리
-13×13 처리
-25×25 처리
-행/열 개수 확인 함수
-
-즉, 크기에 상관없이 n×n 배열을 처리할 수 있는 구조를 먼저 만드는 거야.
+#### * MAC 연산 용어 & 기호
+- **MAC** : Multiply-Accumulate, 곱하고 더하는 연산
+- **Pattern** × Filter : 같은 위치의 값끼리 곱셈
+- **Score** : 곱셈 결과를 모두 더한 값
+- **N × N → O(N²)** : 입력 크기에 따른 시간 복잡도
 
 ## 3. MAC 연산 함수 구현
 
