@@ -1,5 +1,6 @@
 import json
 
+
 def mac_score(pattern, filter_data):
     score = 0.0
 
@@ -9,25 +10,32 @@ def mac_score(pattern, filter_data):
 
     return score
 
+
 def judge_score(score_a, score_b):
     epsilon = 1e-9
 
     if abs(score_a - score_b) < epsilon:
         return "UNDECIDED"
+
     elif score_a > score_b:
         return "A"
+
     else:
         return "B"
+
 
 def normalize_label(label):
     label = str(label).strip().lower()
 
     if label == "+" or label == "cross":
         return "Cross"
+
     elif label == "x":
         return "X"
+
     else:
         return None
+
 
 def read_matrix_3x3(name):
     print(f"\n{name} 입력")
@@ -35,38 +43,54 @@ def read_matrix_3x3(name):
     matrix = []
 
     for i in range(3):
+
         while True:
+
             row = input(f"{i + 1}행: ").split()
 
             if len(row) != 3:
-                print("입력 형식 오류: 각 줄에 3개의 숫자를 공백으로 구분해 입력하세요.")
+                print(
+                    "입력 형식 오류: "
+                    "각 줄에 3개의 숫자를 공백으로 구분해 입력하세요."
+                )
                 continue
 
             try:
                 row = [float(value) for value in row]
                 matrix.append(row)
                 break
+
             except ValueError:
                 print("입력 형식 오류: 숫자만 입력하세요.")
 
     return matrix
 
+
 def load_json_data(filename):
     try:
+
         with open(filename, "r", encoding="utf-8") as file:
             data = json.load(file)
 
         return data
 
     except FileNotFoundError:
+
         print(f"파일을 찾을 수 없습니다: {filename}")
         return None
 
     except json.JSONDecodeError:
+
         print(f"JSON 형식 오류: {filename}")
         return None
 
+
+# =========================================================
+# JSON 기본 구조 및 크기 검증
+# =========================================================
+
 def validate_json_data(data):
+
     if not isinstance(data, dict):
         print("JSON 형식 오류: 최상위 데이터가 딕셔너리가 아닙니다.")
         return False
@@ -90,129 +114,580 @@ def validate_json_data(data):
         print("JSON 구조 오류: patterns가 딕셔너리가 아닙니다.")
         return False
 
+    # -----------------------------------------------------
+    # size_5, size_13, size_25 필터 존재 여부 확인
+    # -----------------------------------------------------
+
     required_sizes = [5, 13, 25]
 
     for size in required_sizes:
+
         key = f"size_{size}"
 
         if key not in filters:
             print(f"필터 오류: {key}가 없습니다.")
             return False
 
+    # -----------------------------------------------------
+    # patterns의 키와 기본 구조 확인
+    # -----------------------------------------------------
+
     for pattern_key, pattern_data in patterns.items():
 
         parts = pattern_key.split("_")
 
+        # size_N_idx 형식 확인
         if len(parts) < 3 or parts[0] != "size":
+
             print(f"패턴 키 형식 오류: {pattern_key}")
             continue
 
         try:
             size = int(parts[1])
+
         except ValueError:
+
             print(f"패턴 크기 오류: {pattern_key}")
             continue
 
+        # 해당 size_N 필터가 존재하는지 확인
         filter_key = f"size_{size}"
 
         if filter_key not in filters:
-            print(f"{pattern_key}: 해당 필터 {filter_key}가 없습니다.")
+
+            print(
+                f"{pattern_key}: "
+                f"해당 필터 {filter_key}가 없습니다."
+            )
             continue
 
         if not isinstance(pattern_data, dict):
+
             print(f"{pattern_key}: 데이터 형식 오류")
             continue
 
         if "input" not in pattern_data:
+
             print(f"{pattern_key}: input이 없습니다.")
             continue
 
         if "expected" not in pattern_data:
+
             print(f"{pattern_key}: expected가 없습니다.")
             continue
 
+        # -------------------------------------------------
+        # 패턴 N x N 크기 확인
+        # -------------------------------------------------
+
         input_data = pattern_data["input"]
 
-        if len(input_data) != size:
-            print(f"{pattern_key}: 행 크기 불일치")
+        if not isinstance(input_data, list):
+
+            print(
+                f"{pattern_key}: "
+                "input 데이터가 리스트가 아닙니다."
+            )
             continue
 
-        valid_rows = True
+        if len(input_data) != size:
+
+            print(
+                f"{pattern_key}: "
+                f"행 크기 불일치 "
+                f"(actual: {len(input_data)}, expected: {size})"
+            )
+            continue
+
+        row_error = False
 
         for row in input_data:
-            if len(row) != size:
-                valid_rows = False
+
+            if not isinstance(row, list):
+
+                row_error = True
                 break
 
-        if not valid_rows:
-            print(f"{pattern_key}: 열 크기 불일치")
+            if len(row) != size:
+
+                row_error = True
+                break
+
+        if row_error:
+
+            print(
+                f"{pattern_key}: "
+                f"열 크기 불일치 "
+                f"(expected: {size})"
+            )
             continue
-        
+
     print("JSON 기본 구조 및 크기 검증 완료")
+
     return True
 
+
+# =========================================================
+# JSON 데이터 분석
+# =========================================================
+
 def analyze_json_data(data):
+
     filters = data["filters"]
     patterns = data["patterns"]
 
+    total = 0
+    passed = 0
+    failed = 0
+
+    failed_cases = []
+
     for pattern_key, pattern_data in patterns.items():
+
+        total += 1
+
+        # -------------------------------------------------
+        # 1. 패턴 키 확인
+        # -------------------------------------------------
 
         parts = pattern_key.split("_")
 
         if len(parts) < 3 or parts[0] != "size":
-            print(f"\n패턴 키 형식 오류: {pattern_key}")
+
+            reason = "패턴 키 형식 오류"
+
+            print(f"\n{pattern_key}: FAIL - {reason}")
+
+            failed += 1
+            failed_cases.append((pattern_key, reason))
+
             continue
 
+        # -------------------------------------------------
+        # 2. N 추출
+        # -------------------------------------------------
+
         try:
+
             size = int(parts[1])
+
         except ValueError:
-            print(f"\n패턴 크기 오류: {pattern_key}")
+
+            reason = "패턴 크기 오류"
+
+            print(f"\n{pattern_key}: FAIL - {reason}")
+
+            failed += 1
+            failed_cases.append((pattern_key, reason))
+
             continue
+
+        # -------------------------------------------------
+        # 3. size_N 필터 선택
+        # -------------------------------------------------
 
         filter_key = f"size_{size}"
 
         if filter_key not in filters:
-            print(f"\n{pattern_key}: {filter_key} 필터가 없습니다.")
+
+            reason = f"{filter_key} 필터가 없음"
+
+            print(f"\n{pattern_key}: FAIL - {reason}")
+
+            failed += 1
+            failed_cases.append((pattern_key, reason))
+
+            continue
+
+        # -------------------------------------------------
+        # 4. pattern_data 구조 확인
+        # -------------------------------------------------
+
+        if not isinstance(pattern_data, dict):
+
+            reason = "패턴 데이터 형식 오류"
+
+            print(f"\n{pattern_key}: FAIL - {reason}")
+
+            failed += 1
+            failed_cases.append((pattern_key, reason))
+
+            continue
+
+        if "input" not in pattern_data:
+
+            reason = "input 없음"
+
+            print(f"\n{pattern_key}: FAIL - {reason}")
+
+            failed += 1
+            failed_cases.append((pattern_key, reason))
+
+            continue
+
+        if "expected" not in pattern_data:
+
+            reason = "expected 없음"
+
+            print(f"\n{pattern_key}: FAIL - {reason}")
+
+            failed += 1
+            failed_cases.append((pattern_key, reason))
+
             continue
 
         pattern = pattern_data["input"]
 
-        cross_filter = filters[filter_key]["cross"]
-        x_filter = filters[filter_key]["x"]
+        # -------------------------------------------------
+        # 5. 패턴 N x N 크기 검증
+        # -------------------------------------------------
 
-        cross_label = normalize_label("cross")
-        x_label = normalize_label("x")
+        if not isinstance(pattern, list):
 
-        cross_score = mac_score(pattern, cross_filter)
-        x_score = mac_score(pattern, x_filter)
+            reason = "패턴 데이터가 리스트가 아님"
 
-        expected_label = normalize_label(pattern_data["expected"])
+            print(f"\n{pattern_key}: FAIL - {reason}")
+
+            failed += 1
+            failed_cases.append((pattern_key, reason))
+
+            continue
+
+        if len(pattern) != size:
+
+            reason = (
+                f"패턴 행 크기 불일치 "
+                f"(actual: {len(pattern)}, expected: {size})"
+            )
+
+            print(f"\n{pattern_key}: FAIL - {reason}")
+
+            failed += 1
+            failed_cases.append((pattern_key, reason))
+
+            continue
+
+        row_error = False
+
+        for row in pattern:
+
+            if not isinstance(row, list):
+
+                row_error = True
+                break
+
+            if len(row) != size:
+
+                row_error = True
+                break
+
+        if row_error:
+
+            reason = (
+                f"패턴 열 크기 불일치 "
+                f"(expected: {size})"
+            )
+
+            print(f"\n{pattern_key}: FAIL - {reason}")
+
+            failed += 1
+            failed_cases.append((pattern_key, reason))
+
+            continue
+
+        # -------------------------------------------------
+        # 6. 필터 확인
+        # -------------------------------------------------
+
+        filter_data = filters[filter_key]
+
+        if not isinstance(filter_data, dict):
+
+            reason = f"{filter_key} 필터 데이터 형식 오류"
+
+            print(f"\n{pattern_key}: FAIL - {reason}")
+
+            failed += 1
+            failed_cases.append((pattern_key, reason))
+
+            continue
+
+        if "cross" not in filter_data or "x" not in filter_data:
+
+            reason = (
+                f"{filter_key}에 Cross/X 필터가 없음"
+            )
+
+            print(f"\n{pattern_key}: FAIL - {reason}")
+
+            failed += 1
+            failed_cases.append((pattern_key, reason))
+
+            continue
+
+        cross_filter = filter_data["cross"]
+        x_filter = filter_data["x"]
+
+        # -------------------------------------------------
+        # 7. Cross 필터 N x N 크기 검증
+        # -------------------------------------------------
+
+        if not isinstance(cross_filter, list):
+
+            reason = "Cross 필터 데이터가 리스트가 아님"
+
+            print(f"\n{pattern_key}: FAIL - {reason}")
+
+            failed += 1
+            failed_cases.append((pattern_key, reason))
+
+            continue
+
+        if len(cross_filter) != size:
+
+            reason = (
+                f"Cross 필터 행 크기 불일치 "
+                f"(actual: {len(cross_filter)}, expected: {size})"
+            )
+
+            print(f"\n{pattern_key}: FAIL - {reason}")
+
+            failed += 1
+            failed_cases.append((pattern_key, reason))
+
+            continue
+
+        cross_error = False
+
+        for row in cross_filter:
+
+            if not isinstance(row, list):
+
+                cross_error = True
+                break
+
+            if len(row) != size:
+
+                cross_error = True
+                break
+
+        if cross_error:
+
+            reason = (
+                f"Cross 필터 열 크기 불일치 "
+                f"(expected: {size})"
+            )
+
+            print(f"\n{pattern_key}: FAIL - {reason}")
+
+            failed += 1
+            failed_cases.append((pattern_key, reason))
+
+            continue
+
+        # -------------------------------------------------
+        # 8. X 필터 N x N 크기 검증
+        # -------------------------------------------------
+
+        if not isinstance(x_filter, list):
+
+            reason = "X 필터 데이터가 리스트가 아님"
+
+            print(f"\n{pattern_key}: FAIL - {reason}")
+
+            failed += 1
+            failed_cases.append((pattern_key, reason))
+
+            continue
+
+        if len(x_filter) != size:
+
+            reason = (
+                f"X 필터 행 크기 불일치 "
+                f"(actual: {len(x_filter)}, expected: {size})"
+            )
+
+            print(f"\n{pattern_key}: FAIL - {reason}")
+
+            failed += 1
+            failed_cases.append((pattern_key, reason))
+
+            continue
+
+        x_error = False
+
+        for row in x_filter:
+
+            if not isinstance(row, list):
+
+                x_error = True
+                break
+
+            if len(row) != size:
+
+                x_error = True
+                break
+
+        if x_error:
+
+            reason = (
+                f"X 필터 열 크기 불일치 "
+                f"(expected: {size})"
+            )
+
+            print(f"\n{pattern_key}: FAIL - {reason}")
+
+            failed += 1
+            failed_cases.append((pattern_key, reason))
+
+            continue
+
+        # -------------------------------------------------
+        # 9. MAC 계산
+        # -------------------------------------------------
+
+        cross_score = mac_score(
+            pattern,
+            cross_filter
+        )
+
+        x_score = mac_score(
+            pattern,
+            x_filter
+        )
+
+        # -------------------------------------------------
+        # 10. 판정
+        # -------------------------------------------------
+
+        result = judge_score(
+            cross_score,
+            x_score
+        )
+
+        if result == "A":
+
+            result_label = "Cross"
+
+        elif result == "B":
+
+            result_label = "X"
+
+        else:
+
+            result_label = "UNDECIDED"
+
+        # -------------------------------------------------
+        # 11. expected 정규화
+        # -------------------------------------------------
+
+        expected_label = normalize_label(
+            pattern_data["expected"]
+        )
+
+        # -------------------------------------------------
+        # 12. 결과 출력
+        # -------------------------------------------------
 
         print(f"\n===== {pattern_key} =====")
-        print(f"{cross_label} 점수: {cross_score}")
-        print(f"{x_label} 점수: {x_score}")
+
+        print(f"Cross 점수: {cross_score}")
+        print(f"X 점수: {x_score}")
+        print(f"판정: {result_label}")
         print(f"expected: {expected_label}")
 
+        # -------------------------------------------------
+        # 13. PASS / FAIL 비교
+        # -------------------------------------------------
+
+        if result_label == expected_label:
+
+            print("결과: PASS")
+
+            passed += 1
+
+        else:
+
+            reason = (
+                f"판정 불일치 "
+                f"(판정: {result_label}, "
+                f"expected: {expected_label})"
+            )
+
+            print(f"결과: FAIL - {reason}")
+
+            failed += 1
+
+            failed_cases.append(
+                (pattern_key, reason)
+            )
+
+    # =====================================================
+    # 결과 요약
+    # =====================================================
+
+    print("\n===== 결과 요약 =====")
+
+    print(f"전체 테스트: {total}")
+    print(f"통과: {passed}")
+    print(f"실패: {failed}")
+
+    if failed_cases:
+
+        print("\n===== 실패 케이스 =====")
+
+        for case, reason in failed_cases:
+
+            print(f"- {case}: FAIL - {reason}")
+
+
+# =========================================================
+# Mode 1 - 3x3 MAC
+# =========================================================
+
 filter_a = read_matrix_3x3("필터 A")
+
 filter_b = read_matrix_3x3("필터 B")
+
 pattern = read_matrix_3x3("패턴")
 
-score_a = mac_score(pattern, filter_a)
-score_b = mac_score(pattern, filter_b)
+score_a = mac_score(
+    pattern,
+    filter_a
+)
 
-result = judge_score(score_a, score_b)
+score_b = mac_score(
+    pattern,
+    filter_b
+)
+
+result = judge_score(
+    score_a,
+    score_b
+)
 
 print("\nMAC 결과")
+
 print(f"필터 A 점수: {score_a}")
 print(f"필터 B 점수: {score_b}")
 print(f"판정 결과: {result}")
 
+
+# =========================================================
+# Mode 2 - JSON
+# =========================================================
+
 data = load_json_data("data.json")
 
 if data is not None:
+
     print("\ndata.json 로드 성공")
-    print("최상위 키:", list(data.keys()))
 
-    validate_json_data(data)
+    print(
+        "최상위 키:",
+        list(data.keys())
+    )
 
-    analyze_json_data(data)
+    if validate_json_data(data):
+
+        analyze_json_data(data)
