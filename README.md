@@ -21,7 +21,7 @@ ___
 MAC_FILTER/
 │
 ├─ main.py.   # 실제 Python 콘솔 프로그램
-├─ data.json  # 5×5, 13×13, 25×25 테스트 데이터
+├─ data.json  # 5×5, 13×13, 25×25 테스트 데이터(과제에서 제공)
 └─ README.md  # 실행 방법, 결과 리포트, 실패 원인, 시간복잡도 작성
 ```
 
@@ -103,71 +103,81 @@ def normalize_label(label):
 
 - 실행화면 : ![④test화면](./images/4test.png)
 
-## 5. 라벨 정규화 함수 구현
+### ⑤ 3×3 사용자 입력 완성
+- 3×3 필터 A, 필터 B, 패턴을 콘솔에서 입력받도록 구현
+- 각 행은 공백으로 구분된 3개의 숫자를 입력하도록 구성
+- 행마다 입력된 값의 개수가 3개인지 검증
+- 숫자가 아닌 값이 입력되면 오류 메시지를 출력하고 재입력하도록 구현
+- 입력된 값을 2차원 리스트 형태로 저장
 
-다음으로 Cross / X 라벨을 통일해.
-
-data.json에서는 여러 형태가 들어올 수 있으니까 별도의 함수로 만드는 게 좋아.
-
-예:
 ```zsh
-"+"      → Cross
-"cross"  → Cross
+def read_matrix_3x3(name):
+    print(f"\n{name} 입력")
 
-"x"      → X
+    matrix = []
+
+    for i in range(3):
+        while True:
+            row = input(f"{i + 1}행: ").split()
+
+            if len(row) != 3:
+                print("입력 형식 오류: 각 줄에 3개의 숫자를 공백으로 구분해 입력하세요.")
+                continue
+
+            try:
+                row = [float(value) for value in row]
+                matrix.append(row)
+                break
+            except ValueError:
+                print("입력 형식 오류: 숫자만 입력하세요.")
+
+    return matrix
+
+filter_a = read_matrix_3x3("필터 A")
+filter_b = read_matrix_3x3("필터 B")
+pattern = read_matrix_3x3("패턴")
 ```
-결국 프로그램 내부에서는 무조건:
+#### * 입력 검증 테스트
+- `1` 입력 → 열 개수 오류 메시지 출력 후 재입력
+- `0 0 ab` 입력 → 숫자 파싱 오류 메시지 출력 후 재입력
+- 정상적인 3개의 숫자 입력 → 해당 행 저장
+
+#### * 저장 구조
+- 필터 A, 필터 B, 패턴 모두 다음과 같은
+- 3×3 2차원 리스트 형태로 저장된다.  
+  [
+      [값, 값, 값],
+      [값, 값, 값],
+      [값, 값, 값]
+  ]
+
+- 실행화면 : ![⑤test화면](./images/5test.png)
+
+### ⑥ 3×3 MAC 연산 및 판정 완성
+- ⑤에서 입력받은 필터 A, 필터 B, 패턴을 MAC 연산 함수와 연결
+- 필터 A와 패턴의 MAC 점수를 계산
+- 필터 B와 패턴의 MAC 점수를 계산
+- 두 점수를 judge_score()에 전달하여 판정
+- A 점수가 높으면 A, B 점수가 높으면 B로 판정
+- 두 점수의 차이가 epsilon보다 작으면 UNDECIDED로 판정
+
 ```zsh
-Cross
-X
+score_a = mac_score(pattern, filter_a)
+score_b = mac_score(pattern, filter_b)
+
+result = judge_score(score_a, score_b)
+
+print("\nMAC 결과")
+print(f"필터 A 점수: {score_a}")
+print(f"필터 B 점수: {score_b}")
+print(f"판정 결과: {result}")
 ```
-두 가지 형태만 사용하게 만드는 거야.
+#### * 실행 결과
+- 필터 A 점수 출력 확인
+- 필터 B 점수 출력 확인
+- A/B/UNDECIDED 판정 결과 출력 확인
 
-이걸 먼저 만들어 놓으면 나중에 expected 비교할 때 상당히 편해.
 
-## 6. 3×3 사용자 입력 모드 구현
-
-이제 사용자에게 직접 입력받는 기능을 붙여.
-
-실행 흐름은:
-```zsh
-프로그램 시작
-   ↓
-모드 선택
-   ↓
-1. 사용자 입력
-   ↓
-필터 A 입력
-   ↓
-필터 B 입력
-   ↓
-저장 확인
-   ↓
-패턴 입력
-   ↓
-MAC 계산
-   ↓
-A/B 판정
-   ↓
-연산 시간 출력
-```
-입력 검증도 여기서 구현
-
-예를 들어 3개가 아닌 숫자를 입력하면:
-```zsh
-입력 형식 오류:
-각 줄에 3개의 숫자를 공백으로 구분해 입력하세요.
-```
-라고 출력하고 다시 입력받아야 해.
-
-따라서 input_matrix(size) 같은 함수를 만들어 두면 좋아.
-```zsh
-input_matrix(3)
-input_matrix(5)
-input_matrix(13)
-input_matrix(25)
-```
-이런 식으로 재사용할 수 있어.
 
 ## 7. data.json 로드 구현
 
