@@ -3,6 +3,8 @@
 
 ___
 
+<dr>
+
 >## 1. 실행 환경
 - OS: macOS Sequoia 15.7.7
 - Shell: zsh
@@ -28,6 +30,7 @@ MAC_FILTER/
 - score 변수 생성 및 초기화
 - for i, for j로 행·열 순회
 - 같은 위치의 값을 곱해 score에 누적
+- 최종 MAC 점수 반환
 
 ```zsh
 def mac_score(pattern, filter_data):
@@ -35,82 +38,69 @@ def mac_score(pattern, filter_data):
 
     for i in range(len(pattern)):
         for j in range(len(pattern[i])):
-            score += pattern[i][j] * filter_data[i][j]
+            score += pattern[i][j] * filter_data[i][j] #같은 위치끼리 곱셈
 
-    return score
+    return score #최종 MAC 점수 반환
 ```
 #### * MAC 연산 용어 & 기호
 - **MAC** : Multiply-Accumulate, 곱하고 더하는 연산
 - **Pattern** × Filter : 같은 위치의 값끼리 곱셈
 - **Score** : 곱셈 결과를 모두 더한 값
-- **N × N → O(N²)** : 입력 크기에 따른 시간 복잡도
 
-## 3. MAC 연산 함수 구현
+### ③ 점수 판정 완성
+- judge_score() 함수 작성
+- 두 필터의 MAC 점수를 비교하여 A/B 판정
+- 두 점수의 차이가 epsilon보다 작으면 UNDECIDED 처리
+- epsilon = 1e-9 적용
+- 부동소수점 계산에서 발생할 수 있는 미세한 오차를 고려하여
+  단순한 == 비교 대신 허용오차 기반 비교를 사용
 
-이 과제의 핵심 기능이야.
-
-별도의 NumPy 없이 반복문으로 구현해야 해.
-
-개념은:
 ```zsh
-MAC =
+# 점수 판정 추가
+def judge_score(score_a, score_b):
+    epsilon = 1e-9
 
-pattern[0][0] × filter[0][0]
-+ pattern[0][1] × filter[0][1]
-+ ...
-+ pattern[n-1][n-1] × filter[n-1][n-1]
+    if abs(score_a - score_b) < epsilon:
+        return "UNDECIDED"
+    elif score_a > score_b:
+        return "A"
+    else:
+        return "B"
 ```
-따라서 함수 하나를 만든다고 생각하면 돼.
+#### * 판정 기준
+- score_a > score_b → A
+- score_b > score_a → B
+- abs(score_a - score_b) < 1e-9 → UNDECIDED
+
+- 실행화면 : ![③test화면](./images/3test.png)
+
+### ④ 라벨 정규화 완성
+- normalize_label() 함수 작성
+- JSON의 다양한 라벨 표현을 프로그램 내부의 표준 라벨로 통일
+- '+'와 'cross'는 'Cross'로 변환
+- 'x'와 'X'는 'X'로 변환
+- 앞뒤 공백 제거 및 대소문자 통일을 적용
+- 지정되지 않은 라벨은 None을 반환하도록 처리
+
 ```zsh
-mac(pattern, filter)
-        ↓
-각 위치의 값을 곱함
-        ↓
-전부 더함
-        ↓
-최종 점수 반환
+def normalize_label(label):
+    label = str(label).strip().lower()
+
+    if label == "+" or label == "cross":
+        return "Cross"
+    elif label == "x":
+        return "X"
+    else:
+        return None
 ```
-예를 들어 결과가:
-```zsh
-Cross filter score = 15.0
-X filter score     = 8.0
-```
-처럼 나오도록 만드는 단계야.
 
-이 부분이 제대로 동작하는지 작은 3×3 데이터로 먼저 테스트하는 게 중요해.
-
-## 4. 두 점수 비교 및 판정 함수 구현
-
-MAC 함수가 완성되면 이제 두 필터를 비교하면 돼.
-```zsh
-Cross 점수
-    ↓
-X 점수
-    ↓
-비교
-    ↓
-Cross / X / UNDECIDED
-```
-여기서 중요한 게 과제에서 요구한 epsilon이야.
-
-예:
-```zsh
-epsilon = 1e-9
-```
-그리고:
-```zsh
-|Cross - X| < epsilon
-        ↓
-   UNDECIDED
-
-그 외에는:
-
-Cross > X → Cross
-X > Cross → X
-```
-이렇게 처리해.
-
-이 단계에서는 아직 JSON을 생각하지 말고 "두 개의 필터와 하나의 패턴을 넣으면 판정 결과가 나오는 구조"를 완성하는 게 좋아.
+#### * 라벨 정규화 규칙
+- '+' → Cross
+- 'cross' → Cross
+- 'x' → X
+- 'X' → X
+- 그 외 값 → None
+- 실행화면 : ![④test화면](./images/4test.png)
 
 ## 5. 라벨 정규화 함수 구현
 
