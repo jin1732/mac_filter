@@ -181,57 +181,146 @@ print(f"판정 결과: {result}")
 - 실행화면 : ![b_결과화면](./images/b_result.png)
 - 실행화면 : ![UNDECIDED_결과화면](./images/u_result.png)
 
-## 7. data.json 로드 구현
+### ⑦ data.json 로드
 
-3×3 사용자 입력이 완성되면 이제 JSON으로 넘어가.
+- JSON 데이터는 data.json 파일(과제 데이타)로 준비하고, Python 표준 라이브러리인 json 모듈을 사용해 읽었다.
+- load_json_data() 함수를 만들어 data.json을 열고, json.load()로 JSON 데이터를 Python 자료형으로 변환했다.
+- 파일이 존재하지 않는 경우 `FileNotFoundError`를 처리하여 파일을 찾을 수 없다는 안내 메시지를 출력하도록 하였다.
+- JSON 파일의 형식이 잘못된 경우에는 `JSONDecodeError`를 처리하여 JSON 형식 오류 메시지를 출력하도록 구현하였다.  
+  (JSON 파일에 문제가 발생하더라도 프로그램이 예외로 종료되지 않고 사용자가 오류 원인을 확인할 수 있음)
+- JSON 데이터를 data에 저장하고, 최상위 키를 출력해 filters와 patterns의 존재 여부를 확인한다.
 
-먼저:
 ```zsh
 import json
-```
-을 사용해서 data.json을 읽어.
 
-그리고 과제에서 요구한 구조를 확인해.
+. . .
+
+def load_json_data(filename):
+    try:
+        with open(filename, "r", encoding="utf-8") as file:
+            data = json.load(file)
+
+        return data
+
+    except FileNotFoundError:
+        print(f"파일을 찾을 수 없습니다: {filename}")
+        return None
+
+    except json.JSONDecodeError:
+        print(f"JSON 형식 오류: {filename}")
+        return None
+
+. . .
+
+if data is not None:
+    print("\ndata.json 로드 성공")
+    print("최상위 키:", list(data.keys()))
+```
+
+- 실행화면 : ![json 연결결과화면](./images/json_result.png)
+
+### ⑧ JSON 스키마 및 크기 검증
+- data.json의 기본 구조와 패턴 크기를 검증하였다.
+- filters, patterns, size_5, size_13, size_25의 존재 여부와 각 패턴의 input, expected 및 N×N 크기를 확인하도록 구현하였다.
+- 크기나 구조가 맞지 않을 경우 오류 메시지를 출력하여 프로그램이 중단되지 않도록 처리하였다.
 ```zsh
-data.json
- ├─ filters
- │   ├─ size_5
- │   ├─ size_13
- │   └─ size_25
- │
- └─ patterns
-     ├─ size_5_...
-     ├─ size_13_...
-     └─ size_25_...
+def validate_json_data(data):
+    if not isinstance(data, dict):
+        print("JSON 형식 오류: 최상위 데이터가 딕셔너리가 아닙니다.")
+        return False
+
+    if "filters" not in data:
+        print("JSON 구조 오류: filters가 없습니다.")
+        return False
+
+    if "patterns" not in data:
+        print("JSON 구조 오류: patterns가 없습니다.")
+        return False
+
+    filters = data["filters"]
+    patterns = data["patterns"]
+
+    if not isinstance(filters, dict):
+        print("JSON 구조 오류: filters가 딕셔너리가 아닙니다.")
+        return False
+
+    if not isinstance(patterns, dict):
+        print("JSON 구조 오류: patterns가 딕셔너리가 아닙니다.")
+        return False
+
+    required_sizes = [5, 13, 25]
+
+    for size in required_sizes:
+        key = f"size_{size}"
+
+        if key not in filters:
+            print(f"필터 오류: {key}가 없습니다.")
+            return False
+
+    for pattern_key, pattern_data in patterns.items():
+
+        parts = pattern_key.split("_")
+
+        if len(parts) < 3 or parts[0] != "size":
+            print(f"패턴 키 형식 오류: {pattern_key}")
+            continue
+
+        try:
+            size = int(parts[1])
+        except ValueError:
+            print(f"패턴 크기 오류: {pattern_key}")
+            continue
+
+        filter_key = f"size_{size}"
+
+        if filter_key not in filters:
+            print(f"{pattern_key}: 해당 필터 {filter_key}가 없습니다.")
+            continue
+
+        if not isinstance(pattern_data, dict):
+            print(f"{pattern_key}: 데이터 형식 오류")
+            continue
+
+        if "input" not in pattern_data:
+            print(f"{pattern_key}: input이 없습니다.")
+            continue
+
+        if "expected" not in pattern_data:
+            print(f"{pattern_key}: expected가 없습니다.")
+            continue
+
+        input_data = pattern_data["input"]
+
+        if len(input_data) != size:
+            print(f"{pattern_key}: 행 크기 불일치")
+            continue
+
+        valid_rows = True
+
+        for row in input_data:
+            if len(row) != size:
+                valid_rows = False
+                break
+
+        if not valid_rows:
+            print(f"{pattern_key}: 열 크기 불일치")
+            continue
+        
+        print("JSON 기본 구조 및 크기 검증 완료")
+        return True
+
+...
+
+data = load_json_data("data.json")
+
+if data is not None:
+print("\ndata.json 로드 성공")
+print("최상위 키:", list(data.keys()))
+
+validate_json_data(data)
 ```
-이 단계에서는 계산보다 데이터 구조 확인이 먼저야.
+- 실행화면 : ![json 구조 및 크기 검증](./images/j_result.png)
 
-## 8. JSON 스키마 검증
-
-JSON을 읽은 다음 바로 계산하지 말고 검증부터 해야 해.
-
-확인할 것:
-```zsh
-filters 존재?
-   ↓
-size_5 존재?
-size_13 존재?
-size_25 존재?
-   ↓
-patterns 존재?
-   ↓
-각 pattern의 input 존재?
-expected 존재?
-   ↓
-패턴 크기와 필터 크기 일치?
-```
-문제가 있으면 프로그램이 죽으면 안 되고 해당 케이스를 FAIL로 처리해야 해.
-
-예:
-```zsh
-Case: size_13_02
-FAIL - 패턴 크기와 필터 크기가 일치하지 않음
-```
 
 ## 9. JSON의 키에서 N 추출
 
