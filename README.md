@@ -177,7 +177,9 @@ print(f"판정 결과: {result}")
 - 필터 B 점수 출력 확인
 - A/B/UNDECIDED 판정 결과 출력 확인
 
-
+- 실행화면 : ![a_결과화면](./images/a_result.png)
+- 실행화면 : ![b_결과화면](./images/b_result.png)
+- 실행화면 : ![UNDECIDED_결과화면](./images/u_result.png)
 
 ## 7. data.json 로드 구현
 
