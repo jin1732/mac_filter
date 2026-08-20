@@ -100,6 +100,7 @@ def normalize_label(label):
 - 'x' → X
 - 'X' → X
 - 그 외 값 → None
+
 - 실행화면 : ![④test화면](./images/4test.png)
 
 ## 5. 라벨 정규화 함수 구현
