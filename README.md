@@ -322,44 +322,54 @@ validate_json_data(data)
 - 실행화면 : ![json 구조 및 크기 검증](./images/j_result.png)
 
 
-## 9. JSON의 키에서 N 추출
+### ⑨ JSON 데이터 분석 및 라벨 정규화
+- 각 패턴의 크기에 맞는 필터를 선택하여 Cross와 X의 MAC 점수를 계산하였다.
+- JSON의 `expected`와 필터 키를 `Cross`, `X`로 정규화하여 출력하도록 구현하였다.
 
-이 부분이 과제에서 중요한 부분이야.
+```zsh
+def analyze_json_data(data):
+    filters = data["filters"]
+    patterns = data["patterns"]
 
-예를 들어:
-```zsh
-size_5_01
-size_13_02
-size_25_01
-```
-이면 키에서:
-```zsh
-5
-13
-25
-```
-를 추출해야 해.
+    for pattern_key, pattern_data in patterns.items():
 
-그리고:
-```zsh
-5  → size_5 필터
-13 → size_13 필터
-25 → size_25 필터
-```
-를 선택하도록 만들면 돼.
+        parts = pattern_key.split("_")
 
-즉 전체 흐름은:
-```zsh
-pattern key
-     ↓
-N 추출
-     ↓
-size_N 필터 선택
-     ↓
-크기 검증
-     ↓
-MAC 계산
+        if len(parts) < 3 or parts[0] != "size":
+            print(f"\n패턴 키 형식 오류: {pattern_key}")
+            continue
+
+        try:
+            size = int(parts[1])
+        except ValueError:
+            print(f"\n패턴 크기 오류: {pattern_key}")
+            continue
+
+        filter_key = f"size_{size}"
+
+        if filter_key not in filters:
+            print(f"\n{pattern_key}: {filter_key} 필터가 없습니다.")
+            continue
+
+        pattern = pattern_data["input"]
+
+        cross_filter = filters[filter_key]["cross"]
+        x_filter = filters[filter_key]["x"]
+
+        cross_label = normalize_label("cross")
+        x_label = normalize_label("x")
+
+        cross_score = mac_score(pattern, cross_filter)
+        x_score = mac_score(pattern, x_filter)
+
+        expected_label = normalize_label(pattern_data["expected"])
+
+        print(f"\n===== {pattern_key} =====")
+        print(f"{cross_label} 점수: {cross_score}")
+        print(f"{x_label} 점수: {x_score}")
+        print(f"expected: {expected_label}")
 ```
+- 실행화면 : ![MAC 점수를 계산](./images/MAC_result.png)
 
 ## 10. JSON 전체 케이스 판정
 

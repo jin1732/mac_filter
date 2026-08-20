@@ -180,12 +180,18 @@ def analyze_json_data(data):
         cross_filter = filters[filter_key]["cross"]
         x_filter = filters[filter_key]["x"]
 
+        cross_label = normalize_label("cross")
+        x_label = normalize_label("x")
+
         cross_score = mac_score(pattern, cross_filter)
         x_score = mac_score(pattern, x_filter)
 
+        expected_label = normalize_label(pattern_data["expected"])
+
         print(f"\n===== {pattern_key} =====")
-        print(f"Cross 점수: {cross_score}")
-        print(f"X 점수: {x_score}")
+        print(f"{cross_label} 점수: {cross_score}")
+        print(f"{x_label} 점수: {x_score}")
+        print(f"expected: {expected_label}")
 
 filter_a = read_matrix_3x3("필터 A")
 filter_b = read_matrix_3x3("필터 B")
@@ -208,3 +214,5 @@ if data is not None:
     print("최상위 키:", list(data.keys()))
 
     validate_json_data(data)
+
+    analyze_json_data(data)
