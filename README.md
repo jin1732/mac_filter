@@ -11,6 +11,8 @@ ___
 - Python: 3.12.13
 - Git: 2.54.0
 - Editor : Visual Studio Code
+- 사용 라이브러리: Python 표준 라이브러리 `json`, `time`만 사용
+- NumPy, pandas 등 외부 라이브러리 사용하지 않음
 
 
 >## 2. Mac 연산 실핼 기록
@@ -31,6 +33,7 @@ MAC_FILTER/
 - for i, for j로 행·열 순회
 - 같은 위치의 값을 곱해 score에 누적
 - 최종 MAC 점수 반환
+- 2차원 리스트의 `pattern[i][j]`, `filter_data[i][j]`를 이용해 특정 위치의 값을 읽어 MAC 연산에 사용한다.
 
 ```zsh
 def mac_score(pattern, filter_data):
@@ -93,7 +96,6 @@ def normalize_label(label):
     else:
         return None
 ```
-
 #### * 라벨 정규화 규칙
 - '+' → Cross
 - 'cross' → Cross
@@ -222,6 +224,9 @@ if data is not None:
 - data.json의 기본 구조와 패턴 크기를 검증하였다.
 - filters, patterns, size_5, size_13, size_25의 존재 여부와 각 패턴의 input, expected 및 N×N 크기를 확인하도록 구현하였다.
 - 크기나 구조가 맞지 않을 경우 오류 메시지를 출력하여 프로그램이 중단되지 않도록 처리하였다.
+- Cross 필터와 X 필터 역시 패턴과 동일하게 N×N 크기인지 검증하였다.
+- 행 또는 열의 크기가 맞지 않는 경우 해당 케이스를 FAIL 처리하고 원인을 기록하였다.
+
 ```zsh
 def validate_json_data(data):
     if not isinstance(data, dict):
@@ -370,8 +375,9 @@ def analyze_json_data(data):
 ```
 - 실행화면 : ![MAC 점수를 계산](./images/MAC_result.png)
 
+>## 3. 결과 리포트
 
-### ⑩ JSON 스키마·크기 검증 및 PASS/FAIL 결과 비교
+### ① JSON 스키마·크기 검증 및 PASS/FAIL 결과 비교
 - data.json의 기본 구조를 검증한다.
 - filters와 patterns가 존재하는지 확인한다.
 - size_5, size_13, size_25 필터가 존재하는지 확인한다.
@@ -405,39 +411,76 @@ for row in pattern:
 - 실행화면 : ![크기 불일치 오류로 FAIL](./images/s_result.png)
   * 패턴의 열 크기가 5가 되어야 하지만 실제 데이터의 열 크기가 달라 크기 불일치 오류로 FAIL 처리되었다. 이 케이스는 의도적인 오류 데이터를 통해 크기 검증과 케이스 단위 FAIL 처리가 정상적으로 동작하는지 확인하였다.
 
-### ⑪ 입력 크기별 MAC 연산 시간 측정 및 성능 분석
+### ② 입력 크기별 MAC 연산 시간 측정 및 성능 분석
 - MAC 연산의 크기별 성능을 비교하기 위해 3×3, 5×5, 13×13, 25×25 크기의 패턴과 필터를 대상으로 측정하였다.
 - 각 크기별 MAC 연산을 최소 10회 반복하여 측정하고, 측정된 시간을 평균 내어 평균 연산 시간을 계산하였다.
 - 시간 측정에는 Python의 time 모듈에 있는 time.perf_counter()를 사용하였다.
 - 입력 및 출력, 파일 읽기 시간은 제외하고 mac_score() 함수가 실행되는 구간만 측정하였다.
 - 각 크기의 MAC 연산 횟수는 N × N, 즉 N²회이므로 크기별 연산 횟수도 함께 출력하였다.
+
 ```zsh
-def measure_performance(filter_a, pattern):
+# =========================================================
+# 3×3 성능 분석
+# =========================================================
+def measure_performance_3x3(filter_a, pattern):
+
+    repeat = 10
+
+    print("\n===== 성능 분석 =====")
+    print("크기(N×N)   | 평균 시간(ms) | 연산 횟수(N²)")
+    print("--------------------------------------------")
+
+    total_time = 0.0
+
+    for _ in range(repeat):
+
+        start = time.perf_counter()
+
+        mac_score(pattern, filter_a)
+
+        end = time.perf_counter()
+
+        total_time += (end - start) * 1000
+
+    average_time = total_time / repeat
+    operation_count = 3 * 3
+
+    print(
+        f"{3:>2}×{3:<2} | "
+        f"{average_time:>12.6f} | "
+        f"{operation_count:>8}"
+    )
+
+# =========================================================
+# 전체 크기 성능 분석
+# =========================================================
+
+def measure_performance():
+
     sizes = [3, 5, 13, 25]
     repeat = 10
 
     print("\n===== 성능 분석 =====")
-    print("크기(N×N) | 평균 시간(ms) | 연산 횟수(N²)")
-    print("----------------------------------------")
+    print("크기(N×N)   | 평균 시간(ms) | 연산 횟수(N²)")
+    print("--------------------------------------------")
 
     for size in sizes:
-        if size == 3:
-            test_pattern = pattern
-            test_filter = filter_a
-        else:
-            test_pattern = [
-                [1.0 for _ in range(size)]
-                for _ in range(size)
-            ]
 
-            test_filter = [
-                [1.0 for _ in range(size)]
-                for _ in range(size)
-            ]
+        # 테스트용 N×N 데이터 생성
+        test_pattern = [
+            [1.0 for _ in range(size)]
+            for _ in range(size)
+        ]
+
+        test_filter = [
+            [1.0 for _ in range(size)]
+            for _ in range(size)
+        ]
 
         total_time = 0.0
 
         for _ in range(repeat):
+
             start = time.perf_counter()
 
             mac_score(test_pattern, test_filter)
@@ -450,20 +493,32 @@ def measure_performance(filter_a, pattern):
         operation_count = size * size
 
         print(
-            f"{size}×{size} | "
-            f"{average_time:.6f} | "
-            f"{operation_count}"
+            f"{size:>2}×{size:<2} | "
+            f"{average_time:>12.6f} | "
+            f"{operation_count:>8}"
         )
 ```
+```zsh
+score_a = mac_score(pattern, filter_a)
+score_b = mac_score(pattern, filter_b)
+
+result = judge_score(score_a, score_b)
+
+print("\n===== MAC 결과 =====")
+print(f"필터 A 점수: {score_a}")
+print(f"필터 B 점수: {score_b}")
+print(f"판정 결과: {result}")
+
+measure_performance_3x3(filter_a, pattern)
+```
+
 - 실행화면 : ![MAC 연산 시간 측정 결과](./images/t_result.png)
 
-#### * 실행 결과
-- sizes = [3, 5, 13, 25]를 사용하여 과제에서 요구한 네 가지 크기를 순서대로 측정하였다.
-- repeat = 10으로 설정하여 각 크기의 MAC 연산을 10회 반복하고 평균 시간을 계산하였다.
-- operation_count = size * size를 통해 각 크기에서 수행되는 MAC 연산 횟수인 N²를 계산하였다.
-- **성능 분석 및 시간 복잡도**
-입력 크기가 증가할수록 처리해야 하는 원소의 수가 N²에 비례하여 증가하므로 MAC 연산의 시간 복잡도는 O(N²)​이다.
-이번 측정에서도 3×3에서 25×25로 크기가 증가하면서 평균 연산 시간이 증가하는 것을 확인할 수 있었다. 실제 측정 시간은 실행 환경에 따라 달라질 수 있지만, 연산 횟수가 N²에 따라 증가한다는 점에서 MAC 연산의 시간 복잡도 O(N²)을 확인할 수 있다.
+#### 성능 분석 및 시간 복잡도
+  - 3×3 사용자 입력 모드에서는 measure_performance_3x3()를 사용하여 3×3 MAC 연산 시간만 측정한다.
+  - JSON 분석 모드에서는 measure_performance()를 사용하여 3×3, 5×5, 13×13, 25×25의 MAC 연산을 각각   10회 반복 측정하고 평균 시간을 출력한다.
+  - MAC 연산은 N×N 위치를 모두 계산하므로 연산 횟수는 N², 시간 복잡도는 O(N²)이다.
+  - 입력 크기가 증가할수록 연산 횟수와 평균 처리 시간도 증가하는 것을 확인하였다.
 
 ### ⑫ 실행 모드 선택 및 기능 분리
 - 프로그램 실행 시 기능이 자동으로 순차 실행되지 않도록 메뉴 선택 방식으로 구성하였다.
@@ -488,3 +543,12 @@ Mini NPU MAC Filter
 └── 3. 프로그램 종료
 ```
 - 실행화면 : ![실행 모드 선택 및 기능 분리 결과](./images/c_result.png)
+
+#### * 실패 원인 분석
+- 전체 테스트 결과를 출력하여 통과 및 실패 케이스를 확인하였다.
+- 현재 `data.json` 분석 결과 6개의 테스트 중 3개가 PASS, 3개가 FAIL로 나타났다.
+- `size_5_1`, `size_13_2`, `size_25_1`은 Cross와 X의 점수 차이가 매우 작아 `UNDECIDED`로 판정되었다.
+- 이 결과는 `expected` 값과 실제 판정 결과가 일치하지 않아 FAIL로 처리되었다.
+- `judge_score()`에서는 `epsilon = 1e-9`를 사용하여 부동소수점 오차를 고려하였다.
+- 따라서 작은 소수점 차이를 실제 점수 차이로 잘못 판단하지 않도록 처리하였다.
+- 또한 JSON의 구조나 크기가 잘못된 경우 해당 케이스만 FAIL 처리하고 프로그램이 중단되지 않도록 구현하였다.

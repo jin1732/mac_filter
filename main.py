@@ -738,10 +738,13 @@ def analyze_json_data(data):
 def run_mode1():
 
     filter_a = read_matrix_3x3("필터 A")
+    print("필터 A 저장 완료")
 
     filter_b = read_matrix_3x3("필터 B")
+    print("패턴 저장 완료")
 
     pattern = read_matrix_3x3("패턴")
+    print("패턴 저장 완료")
 
     # MAC 계산
     score_a = mac_score(
