@@ -552,3 +552,32 @@ Mini NPU MAC Filter
 - `judge_score()`에서는 `epsilon = 1e-9`를 사용하여 부동소수점 오차를 고려하였다.
 - 따라서 작은 소수점 차이를 실제 점수 차이로 잘못 판단하지 않도록 처리하였다.
 - 또한 JSON의 구조나 크기가 잘못된 경우 해당 케이스만 FAIL 처리하고 프로그램이 중단되지 않도록 구현하였다.
+
+#### **main.py 함수 구조 및 실행 모드 분리**
+```zsh
+main.py
+│
+├── mac_score()                    # MAC 연산
+│
+├── judge_score()                  # 점수 비교 및 A/B/UNDECIDED 판정
+│
+├── normalize_label()              # Cross/X 라벨 정규화
+│
+├── read_matrix_3x3()              # 3×3 사용자 입력 및 입력 검증
+│
+├── load_json_data()               # data.json 로드 및 예외 처리
+│
+├── validate_json_data()            # JSON 구조 및 크기 검증
+│
+├── analyze_json_data()             # JSON 데이터 MAC 분석 및 PASS/FAIL
+│
+├── measure_performance_3x3()       # 사용자 입력 모드의 3×3 성능 측정
+│
+├── measure_performance()           # JSON 모드의 3×3/5×5/13×13/25×25 성능 측정
+│
+├── run_mode1()                     # 사용자 입력 모드 실행
+│
+├── run_mode2()                     # data.json 분석 모드 실행
+│
+└── main()                          # 메뉴 선택 및 프로그램 실행
+```
