@@ -21,12 +21,10 @@ def measure_performance(filter_a, pattern):
 
     for size in sizes:
 
-        # 3×3은 사용자가 입력한 데이터 사용
         if size == 3:
             test_pattern = pattern
             test_filter = filter_a
 
-        # 5×5 이상은 크기에 맞는 테스트 데이터 생성
         else:
             test_pattern = [
                 [1.0 for _ in range(size)]
@@ -41,15 +39,20 @@ def measure_performance(filter_a, pattern):
         total_time = 0.0
 
         for _ in range(repeat):
+
             start = time.perf_counter()
 
-            mac_score(test_pattern, test_filter)
+            mac_score(
+                test_pattern,
+                test_filter
+            )
 
             end = time.perf_counter()
 
             total_time += (end - start) * 1000
 
         average_time = total_time / repeat
+
         operation_count = size * size
 
         print(
@@ -57,6 +60,37 @@ def measure_performance(filter_a, pattern):
             f"{average_time:>12.6f} | "
             f"{operation_count:>8}"
         )
+
+def measure_performance_3x3(filter_a, pattern):
+    repeat = 10
+
+    print("\n===== 성능 분석 =====")
+    print("크기(N×N)   | 평균 시간(ms) | 연산 횟수(N²)")
+    print("--------------------------------------------")
+
+    total_time = 0.0
+
+    for _ in range(repeat):
+
+        start = time.perf_counter()
+
+        mac_score(
+            pattern,
+            filter_a
+        )
+
+        end = time.perf_counter()
+
+        total_time += (end - start) * 1000
+
+    average_time = total_time / repeat
+    operation_count = 3 * 3
+
+    print(
+        f"{3:>2}×{3:<2} | "
+        f"{average_time:>12.6f} | "
+        f"{operation_count:>8}"
+    )
 
 def mac_score(pattern, filter_data):
     score = 0.0
@@ -697,46 +731,58 @@ def analyze_json_data(data):
 
             print(f"- {case}: FAIL - {reason}")
 
-
 # =========================================================
-# Mode 1 - 3x3 MAC
-# =========================================================
-
-filter_a = read_matrix_3x3("필터 A")
-
-filter_b = read_matrix_3x3("필터 B")
-
-pattern = read_matrix_3x3("패턴")
-
-score_a = mac_score(
-    pattern,
-    filter_a
-)
-
-score_b = mac_score(
-    pattern,
-    filter_b
-)
-
-result = judge_score(
-    score_a,
-    score_b
-)
-
-print("\nMAC 결과")
-
-print(f"필터 A 점수: {score_a}")
-print(f"필터 B 점수: {score_b}")
-print(f"판정 결과: {result}")
-
-
-# =========================================================
-# Mode 2 - JSON
+# Mode 1 - 3x3 사용자 입력
 # =========================================================
 
-data = load_json_data("data.json")
+def run_mode1():
 
-if data is not None:
+    filter_a = read_matrix_3x3("필터 A")
+
+    filter_b = read_matrix_3x3("필터 B")
+
+    pattern = read_matrix_3x3("패턴")
+
+    # MAC 계산
+    score_a = mac_score(
+        pattern,
+        filter_a
+    )
+
+    score_b = mac_score(
+        pattern,
+        filter_b
+    )
+
+    # 판정
+    result = judge_score(
+        score_a,
+        score_b
+    )
+
+    print("\n===== MAC 결과 =====")
+
+    print(f"필터 A 점수: {score_a}")
+    print(f"필터 B 점수: {score_b}")
+    print(f"판정 결과: {result}")
+
+    # 3×3 성능 분석만 실행
+    measure_performance_3x3(
+        filter_a,
+        pattern
+    )
+
+
+# =========================================================
+# Mode 2 - data.json 분석
+# =========================================================
+
+def run_mode2():
+
+    data = load_json_data("data.json")
+
+    if data is None:
+        return
 
     print("\ndata.json 로드 성공")
 
@@ -749,4 +795,66 @@ if data is not None:
 
         analyze_json_data(data)
 
-        measure_performance(filter_a, pattern)
+        # 3×3 성능 측정을 위한 테스트 데이터
+        test_pattern = [
+            [1.0, 1.0, 1.0],
+            [1.0, 1.0, 1.0],
+            [1.0, 1.0, 1.0]
+        ]
+
+        test_filter = [
+            [1.0, 1.0, 1.0],
+            [1.0, 1.0, 1.0],
+            [1.0, 1.0, 1.0]
+        ]
+
+        # 성능 분석
+        measure_performance(
+            test_filter,
+            test_pattern
+        )
+
+
+# =========================================================
+# 메인 메뉴
+# =========================================================
+
+def main():
+
+    while True:
+
+        print("\n===================================")
+        print("       Mini NPU MAC Filter")
+        print("===================================")
+
+        print("1. 사용자 입력 (3×3)")
+        print("2. data.json 분석")
+        print("3. 프로그램 종료")
+
+        choice = input("\n모드를 선택하세요: ")
+
+        if choice == "1":
+
+            run_mode1()
+
+        elif choice == "2":
+
+            run_mode2()
+
+        elif choice == "3":
+
+            print("\n프로그램을 종료합니다.")
+            break
+
+        else:
+
+            print("\n입력이 올바르지 않습니다.")
+            print("1, 2, 3 중에서 선택하세요.")
+
+
+# =========================================================
+# 프로그램 실행
+# =========================================================
+
+if __name__ == "__main__":
+    main()
