@@ -1,5 +1,62 @@
 import json
+import time
 
+
+def mac_score(pattern, filter_data):
+    score = 0.0
+
+    for i in range(len(pattern)):
+        for j in range(len(pattern[i])):
+            score += pattern[i][j] * filter_data[i][j]
+
+    return score
+
+def measure_performance(filter_a, pattern):
+    sizes = [3, 5, 13, 25]
+    repeat = 10
+
+    print("\n===== 성능 분석 =====")
+    print("크기(N×N)   | 평균 시간(ms) | 연산 횟수(N²)")
+    print("--------------------------------------------")
+
+    for size in sizes:
+
+        # 3×3은 사용자가 입력한 데이터 사용
+        if size == 3:
+            test_pattern = pattern
+            test_filter = filter_a
+
+        # 5×5 이상은 크기에 맞는 테스트 데이터 생성
+        else:
+            test_pattern = [
+                [1.0 for _ in range(size)]
+                for _ in range(size)
+            ]
+
+            test_filter = [
+                [1.0 for _ in range(size)]
+                for _ in range(size)
+            ]
+
+        total_time = 0.0
+
+        for _ in range(repeat):
+            start = time.perf_counter()
+
+            mac_score(test_pattern, test_filter)
+
+            end = time.perf_counter()
+
+            total_time += (end - start) * 1000
+
+        average_time = total_time / repeat
+        operation_count = size * size
+
+        print(
+            f"{size:>2}×{size:<2} | "
+            f"{average_time:>12.6f} | "
+            f"{operation_count:>8}"
+        )
 
 def mac_score(pattern, filter_data):
     score = 0.0
@@ -691,3 +748,5 @@ if data is not None:
     if validate_json_data(data):
 
         analyze_json_data(data)
+
+        measure_performance(filter_a, pattern)

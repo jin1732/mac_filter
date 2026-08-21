@@ -182,7 +182,6 @@ print(f"판정 결과: {result}")
 - 실행화면 : ![UNDECIDED_결과화면](./images/u_result.png)
 
 ### ⑦ data.json 로드
-
 - JSON 데이터는 data.json 파일(과제 데이타)로 준비하고, Python 표준 라이브러리인 json 모듈을 사용해 읽었다.
 - load_json_data() 함수를 만들어 data.json을 열고, json.load()로 JSON 데이터를 Python 자료형으로 변환했다.
 - 파일이 존재하지 않는 경우 `FileNotFoundError`를 처리하여 파일을 찾을 수 없다는 안내 메시지를 출력하도록 하였다.
@@ -405,3 +404,60 @@ for row in pattern:
 - 실행화면 : ![PASS / FAIL 결과 비교](./images/P_F_result.png)
 - 실행화면 : ![크기 불일치 오류로 FAIL](./images/s_result.png)
   * 패턴의 열 크기가 5가 되어야 하지만 실제 데이터의 열 크기가 달라 크기 불일치 오류로 FAIL 처리되었다. 이 케이스는 의도적인 오류 데이터를 통해 크기 검증과 케이스 단위 FAIL 처리가 정상적으로 동작하는지 확인하였다.
+
+### ⑪ 입력 크기별 MAC 연산 시간 측정 및 성능 분석
+- MAC 연산의 크기별 성능을 비교하기 위해 3×3, 5×5, 13×13, 25×25 크기의 패턴과 필터를 대상으로 측정하였다.
+- 각 크기별 MAC 연산을 최소 10회 반복하여 측정하고, 측정된 시간을 평균 내어 평균 연산 시간을 계산하였다.
+- 시간 측정에는 Python의 time 모듈에 있는 time.perf_counter()를 사용하였다.
+- 입력 및 출력, 파일 읽기 시간은 제외하고 mac_score() 함수가 실행되는 구간만 측정하였다.
+- 각 크기의 MAC 연산 횟수는 N × N, 즉 N²회이므로 크기별 연산 횟수도 함께 출력하였다.
+```zsh
+def measure_performance(filter_a, pattern):
+    sizes = [3, 5, 13, 25]
+    repeat = 10
+
+    print("\n===== 성능 분석 =====")
+    print("크기(N×N) | 평균 시간(ms) | 연산 횟수(N²)")
+    print("----------------------------------------")
+
+    for size in sizes:
+        if size == 3:
+            test_pattern = pattern
+            test_filter = filter_a
+        else:
+            test_pattern = [
+                [1.0 for _ in range(size)]
+                for _ in range(size)
+            ]
+
+            test_filter = [
+                [1.0 for _ in range(size)]
+                for _ in range(size)
+            ]
+
+        total_time = 0.0
+
+        for _ in range(repeat):
+            start = time.perf_counter()
+
+            mac_score(test_pattern, test_filter)
+
+            end = time.perf_counter()
+
+            total_time += (end - start) * 1000
+
+        average_time = total_time / repeat
+        operation_count = size * size
+
+        print(
+            f"{size}×{size} | "
+            f"{average_time:.6f} | "
+            f"{operation_count}"
+        )
+```
+- 실행화면 : ![MAC 연산 시간 측정 결과](./images/t_result.png)
+
+#### * 실행 결과
+- sizes = [3, 5, 13, 25]를 사용하여 과제에서 요구한 네 가지 크기를 순서대로 측정하였다.
+- repeat = 10으로 설정하여 각 크기의 MAC 연산을 10회 반복하고 평균 시간을 계산하였다.
+- operation_count = size * size를 통해 각 크기에서 수행되는 MAC 연산 횟수인 N²를 계산하였다.
